@@ -26,6 +26,9 @@ Vue.use(VueRouter)
   {
     path: '/blog/add',
     name: 'BlogAdd',
+    meta:{
+      requireAuth: true
+    },
     component: BlogEdit
   },
   {

@@ -32,6 +32,13 @@ export default {
             hasLogin: false
         }
     },
+    created() {
+        if(this.$store.getters.getUser.username){
+            this.user.username = this.$store.getters.getUser.username
+            this.user.avatar = this.$store.getters.getUser.avatar
+            this.hasLogin = true
+        }
+    },
     methods:{
         logout(){
             const _this = this
@@ -43,15 +50,6 @@ export default {
                 _this.$store.commit('REMOVE_INFO')
                 _this.$router.push('/login')
             })
-        },
-        created() {
-            console.log(this.$store.getters.getUser.username)
-            if(this.$store.getters.getUser.username){
-                this.user.username = this.$store.getters.getUser.username
-                this.user.avatar = this.$store.getters.getUser.avatar
-                this.hasLogin = true
-                console.log(this.$store.getters.getUser.username)
-            }
         }
     }
 }

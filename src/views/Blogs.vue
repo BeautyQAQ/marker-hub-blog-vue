@@ -6,7 +6,7 @@
           <el-timeline-item :key="blog.id" :timestamp="blog.created" placement="top" v-for="blog in blogs">
             <el-card>
               <router-link :to="{name:'BlogDetail', params:{blogId:blog.id}}">
-                <h4>{{ blog.tital }}</h4>
+                <h4>{{ blog.title }}</h4>
               </router-link>
               <p>{{ blog.description }}</p>
             </el-card>
@@ -37,6 +37,9 @@ export default {
       pageSize: 5
     }
   },
+  mounted() {
+      this.page(1)
+  },
   methods: {
     page(currentPage) {
       const _this = this
@@ -46,9 +49,6 @@ export default {
         _this.total = res.data.data.total
         _this.pageSize = res.data.data.size
       })
-    },
-    mounted() {
-      this.page(1)
     }
   }
 }

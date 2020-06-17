@@ -9,9 +9,13 @@ import Element from 'element-ui'
 import "element-ui/lib/theme-chalk/index.css"
 import axios from 'axios'
 
+import mavonEditor from 'mavon-editor'
+import 'mavon-editor/dist/css/index.css'
+
 Vue.prototype.$axios = axios
 Vue.config.devtools = true
 Vue.use(Element)
+Vue.use(mavonEditor)
 
 Vue.config.productionTip = false
 
