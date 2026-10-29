@@ -32,6 +32,13 @@ describe('API compatibility and failure recovery', () => {
     expect(notifyError).toHaveBeenCalledOnce()
   })
 
+  it('preserves explicit authorization when the active session token has changed', async () => {
+    const client = createApiClient({ getToken: () => 'new-token' })
+    client.defaults.adapter = successAdapter({ code: '20000', data: null })
+    const response = await client.post('/logout', null, { headers: { Authorization: 'old-token' } })
+    expect(response.config.headers.Authorization).toBe('old-token')
+  })
+
   it('clears the session and redirects on HTTP 401', async () => {
     const onUnauthorized = vi.fn()
     const notifyError = vi.fn()

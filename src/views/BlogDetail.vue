@@ -9,7 +9,11 @@
       <template v-else-if="blog">
         <h1 class="page-title">{{ blog.title }}</h1>
         <p class="muted">{{ blog.description }}</p>
-        <RouterLink v-if="ownBlog" :to="{ name: 'BlogEdit', params: { blogId: blog.id } }">编辑文章</RouterLink>
+        <p v-if="Number(blog.status) === 0" class="draft-note">草稿 · 仅自己可见</p>
+        <div v-if="ownBlog" class="article-actions">
+          <RouterLink :to="{ name: 'BlogEdit', params: { blogId: blog.id } }">编辑文章</RouterLink>
+          <DeleteBlogButton :blog-id="blog.id" :title="blog.title" @deleted="$router.push('/my/blogs')" />
+        </div>
         <el-divider />
         <MdPreview id="blog-preview" :model-value="blog.content || ''" :sanitize="sanitizeMarkdown" v-bind="previewOptions" />
       </template>
@@ -23,10 +27,11 @@ import 'md-editor-v3/lib/style.css'
 import BlogHeader from '../components/Header.vue'
 import { sanitizeMarkdown } from '../utils/markdown'
 import { previewOptions } from '../plugins/markdown'
+import DeleteBlogButton from '../components/DeleteBlogButton.vue'
 
 export default {
   name: 'BlogDetailView',
-  components: { BlogHeader, MdPreview },
+  components: { BlogHeader, MdPreview, DeleteBlogButton },
   data: () => ({ blog: null, loading: false, error: '', requestSequence: 0, previewOptions }),
   computed: {
     ownBlog() {
@@ -59,3 +64,8 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.article-actions { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.draft-note { color: #b88230; }
+</style>

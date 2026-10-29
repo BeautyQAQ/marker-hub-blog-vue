@@ -4,7 +4,7 @@ import { createAppStore } from '../store'
 import { installAuthGuard } from '../permission'
 
 describe('authoring route protection', () => {
-  it.each(['/blog/add', '/blog/12/edit'])('redirects a visitor from %s and preserves the return address', async path => {
+  it.each(['/blog/add', '/blog/12/edit', '/my/blogs'])('redirects a visitor from %s and preserves the return address', async path => {
     localStorage.clear()
     sessionStorage.clear()
     const store = createAppStore()
@@ -12,6 +12,7 @@ describe('authoring route protection', () => {
     const router = createRouter({ history: createMemoryHistory(), routes: [
       { path: '/login', name: 'Login', component },
       { path: '/blog/add', component, meta: { requireAuth: true } },
+      { path: '/my/blogs', component, meta: { requireAuth: true } },
       { path: '/blog/:blogId/edit', component, meta: { requireAuth: true } }
     ] })
     installAuthGuard(router, store)

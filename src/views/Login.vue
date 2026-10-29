@@ -43,7 +43,7 @@ export default {
       this.submitting = true
       this.error = ''
       try {
-        const response = await this.$axios.post('/login', this.form)
+        const response = await this.$axios.post('/login', this.form, { skipAuthRedirect: true, headers: { Authorization: null } })
         const token = response.headers.authorization
         const user = response.data.data
         if (!token || !user || typeof user !== 'object' || Array.isArray(user)) {

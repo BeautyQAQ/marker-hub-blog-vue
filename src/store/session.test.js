@@ -49,13 +49,61 @@ describe('visitor and persisted login state', () => {
     store.commit('SET_USERINFO', { id: 7, username: '测试用户' })
     const push = vi.fn()
     const wrapper = shallowMount(BlogHeader, {
-      global: { plugins: [store], mocks: { $axios: { get: vi.fn().mockRejectedValue(new Error('offline')) }, $router: { push } }, stubs: { RouterLink: true, ElButton: true } }
+      global: { plugins: [store], mocks: { $axios: { post: vi.fn().mockRejectedValue(new Error('offline')) }, $router: { push } }, stubs: { RouterLink: true, ElButton: true } }
     })
     await wrapper.vm.logout()
     expect(store.getters.isAuthenticated).toBe(false)
     expect(localStorage.getItem('token')).toBeNull()
     expect(localStorage.getItem('userInfo')).toBeNull()
     expect(push).toHaveBeenCalledWith('/login')
+    wrapper.unmount()
+  })
+
+  it('keeps the session when the editor cancels navigation before logout', async () => {
+    const store = createAppStore()
+    store.commit('SET_TOKEN', 'test-token')
+    const post = vi.fn()
+    const wrapper = shallowMount(BlogHeader, {
+      global: { plugins: [store], mocks: { $axios: { post }, $router: { push: vi.fn().mockResolvedValue({ type: 4 }) } }, stubs: { RouterLink: true, ElButton: true } }
+    })
+    await wrapper.vm.logout()
+    expect(post).not.toHaveBeenCalled()
+    expect(store.getters.isAuthenticated).toBe(true)
+    wrapper.unmount()
+  })
+
+  it('can log out while already on the login page', async () => {
+    const store = createAppStore()
+    store.commit('SET_TOKEN', 'old-token')
+    const post = vi.fn().mockResolvedValue({})
+    const push = vi.fn().mockResolvedValue({ type: 16 })
+    const wrapper = shallowMount(BlogHeader, {
+      global: { plugins: [store], mocks: { $route: { name: 'Login' }, $axios: { post }, $router: { push } }, stubs: { RouterLink: true, ElButton: { template: '<button><slot /></button>' } } }
+    })
+    await wrapper.find('button').trigger('click')
+    await vi.waitFor(() => expect(store.getters.isAuthenticated).toBe(false))
+    expect(push).not.toHaveBeenCalled()
+    expect(post).toHaveBeenCalledWith('/logout', null, { headers: { Authorization: 'old-token' } })
+    wrapper.unmount()
+  })
+
+  it('revokes the captured token without clearing a newer login', async () => {
+    const store = createAppStore()
+    store.commit('SET_TOKEN', 'old-token')
+    let finishLogout
+    const post = vi.fn(() => new Promise(resolve => { finishLogout = resolve }))
+    const wrapper = shallowMount(BlogHeader, {
+      global: { plugins: [store], mocks: { $route: { name: 'Blogs' }, $axios: { post }, $router: { push: vi.fn() } }, stubs: { RouterLink: true, ElButton: { template: '<button><slot /></button>' } } }
+    })
+    await wrapper.find('button').trigger('click')
+    await vi.waitFor(() => expect(post).toHaveBeenCalledOnce())
+    store.commit('SET_TOKEN', 'new-token')
+    store.commit('SET_USERINFO', { id: 8, username: '新用户' })
+    finishLogout({})
+    await vi.waitFor(() => expect(wrapper.vm.loggingOut).toBe(false))
+    expect(post).toHaveBeenCalledWith('/logout', null, { headers: { Authorization: 'old-token' } })
+    expect(store.state.token).toBe('new-token')
+    expect(store.getters.getUser.id).toBe(8)
     wrapper.unmount()
   })
 })

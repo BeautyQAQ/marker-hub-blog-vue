@@ -5,6 +5,7 @@
       <nav aria-label="主导航">
         <RouterLink to="/blogs">主页</RouterLink>
         <RouterLink v-if="hasLogin" to="/blog/add">发表文章</RouterLink>
+        <RouterLink v-if="hasLogin" to="/my/blogs">我的文章</RouterLink>
         <template v-if="hasLogin">
           <span class="user-name">{{ user.username || '已登录' }}</span>
           <el-button text type="danger" :loading="loggingOut" @click="logout">退出</el-button>
@@ -27,14 +28,21 @@ export default {
     async logout() {
       if (this.loggingOut) return
       this.loggingOut = true
+      const token = this.$store.state.token
+      let navigationSucceeded = false
       try {
-        await this.$axios.get('/logout')
+        // Let the editor's unsaved-changes guard run before ending the session.
+        if (this.$route?.name !== 'Login') {
+          const navigationFailure = await this.$router.push('/login')
+          if (navigationFailure) return
+        }
+        navigationSucceeded = true
+        await this.$axios.post('/logout', null, { headers: { Authorization: token } })
       } catch {
         // Always end the local session, including when the server is unavailable.
       } finally {
-        this.$store.commit('REMOVE_INFO')
+        if (navigationSucceeded && this.$store.state.token === token) this.$store.commit('REMOVE_INFO')
         this.loggingOut = false
-        await this.$router.push('/login')
       }
     }
   }
