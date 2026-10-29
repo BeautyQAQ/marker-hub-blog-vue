@@ -1,26 +1,13 @@
-import Vue from 'vue'
+import { createApp } from 'vue'
+import { installElement } from './plugins/element'
 import App from './App.vue'
 import router from './router'
 import store from './store'
-import './axios'  //请求拦截
+import api from './axios'
+import './permission'
+import './style.css'
 
-import Element from 'element-ui'
-
-import "element-ui/lib/theme-chalk/index.css"
-import axios from 'axios'
-
-import mavonEditor from 'mavon-editor'
-import 'mavon-editor/dist/css/index.css'
-
-Vue.prototype.$axios = axios
-Vue.config.devtools = true
-Vue.use(Element)
-Vue.use(mavonEditor)
-
-Vue.config.productionTip = false
-
-new Vue({
-  router,
-  store,
-  render: h => h(App)
-}).$mount('#app')
+const app = createApp(App)
+app.config.globalProperties.$axios = api
+installElement(app)
+app.use(store).use(router).mount('#app')

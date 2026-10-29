@@ -1,52 +1,13 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
-import Login from '../views/Login.vue'
-import BlogEdit from '../views/BlogEdit.vue'
-import BlogDetail from '../views/BlogDetail.vue'
+import { createRouter, createWebHistory } from 'vue-router'
 
-
-Vue.use(VueRouter)
-
-  const routes = [
-  {
-    path: '/',
-    name: 'Index',
-    redirect: {name: 'Blogs'}
-  },
-  {
-    path: '/login',
-    name: 'Login',
-    component: Login
-  },
-  {
-    path: '/blogs',
-    name: 'Blogs',
-    component: () => import('../views/Blogs.vue') //懒加载
-  },
-  {
-    path: '/blog/add',
-    name: 'BlogAdd',
-    meta:{
-      requireAuth: true
-    },
-    component: BlogEdit
-  },
-  {
-    path: '/blog/:blogId',
-    name: 'BlogDetail',
-    component: BlogDetail
-  },
-  {
-    path: '/blog/:blogId/edit',
-    name: 'BlogEdit',
-    component: BlogEdit
-  }
+export const routes = [
+  { path: '/', name: 'Index', redirect: { name: 'Blogs' } },
+  { path: '/login', name: 'Login', component: () => import('../views/Login.vue') },
+  { path: '/blogs', name: 'Blogs', component: () => import('../views/Blogs.vue') },
+  { path: '/blog/add', name: 'BlogAdd', meta: { requireAuth: true }, component: () => import('../views/BlogEdit.vue') },
+  { path: '/blog/:blogId', name: 'BlogDetail', component: () => import('../views/BlogDetail.vue') },
+  { path: '/blog/:blogId/edit', name: 'BlogEdit', meta: { requireAuth: true }, component: () => import('../views/BlogEdit.vue') },
+  { path: '/:pathMatch(.*)*', name: 'NotFound', component: () => import('../views/NotFound.vue') }
 ]
 
-const router = new VueRouter({
-  mode: 'history',
-  base: process.env.BASE_URL,
-  routes
-})
-
-export default router
+export default createRouter({ history: createWebHistory(import.meta.env.BASE_URL), routes })

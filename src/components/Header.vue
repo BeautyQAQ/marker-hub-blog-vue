@@ -1,64 +1,51 @@
 <template>
-  <div class="m-content">
-    <h3>博客</h3>
-    <div class="block">
-        <el-avatar :size="50" :src="user.avatar"></el-avatar>
-        <div>{{ user.username }}</div>
+  <header class="site-header">
+    <div class="header-inner">
+      <RouterLink to="/blogs" class="brand">博客</RouterLink>
+      <nav aria-label="主导航">
+        <RouterLink to="/blogs">主页</RouterLink>
+        <RouterLink v-if="hasLogin" to="/blog/add">发表文章</RouterLink>
+        <template v-if="hasLogin">
+          <span class="user-name">{{ user.username || '已登录' }}</span>
+          <el-button text type="danger" :loading="loggingOut" @click="logout">退出</el-button>
+        </template>
+        <RouterLink v-else to="/login">登录</RouterLink>
+      </nav>
     </div>
-    <div class="maction">
-        <el-link href="/blogs">主页</el-link>
-        <el-divider direction="vertical"></el-divider>
-        <el-link type="success" :disabled="!hasLogin" href="/blog/add">发表文章</el-link>
-        <el-divider direction="vertical"></el-divider>
-        <span v-show="!hasLogin">
-            <el-link type="primary" href="/login">登录</el-link>
-        </span>
-        <span v-show="hasLogin">
-            <el-link type="danger" @click="logout">退出</el-link>
-        </span>
-    </div>
-  </div>
+  </header>
 </template>
 
 <script>
 export default {
-    name: "Header",
-    data() {
-        return {
-            user: {
-                username: "请先登录",
-                avatar: "https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png"
-            },
-            hasLogin: false
-        }
-    },
-    created() {
-        if(this.$store.getters.getUser.username){
-            this.user.username = this.$store.getters.getUser.username
-            this.user.avatar = this.$store.getters.getUser.avatar
-            this.hasLogin = true
-        }
-    },
-    methods:{
-        logout(){
-            const _this = this
-            this.$axios.get('/logout',{
-                headers: {
-                    "Authorization": localStorage.getItem("token")
-                }
-            }).then(res => {
-                _this.$store.commit('REMOVE_INFO')
-                _this.$router.push('/login')
-            })
-        }
+  name: 'BlogHeader',
+  data: () => ({ loggingOut: false }),
+  computed: {
+    user() { return this.$store.getters.getUser },
+    hasLogin() { return this.$store.getters.isAuthenticated }
+  },
+  methods: {
+    async logout() {
+      if (this.loggingOut) return
+      this.loggingOut = true
+      try {
+        await this.$axios.get('/logout')
+      } catch {
+        // Always end the local session, including when the server is unavailable.
+      } finally {
+        this.$store.commit('REMOVE_INFO')
+        this.loggingOut = false
+        await this.$router.push('/login')
+      }
     }
+  }
 }
 </script>
 
-<style>
-.m-content{
-    text-align: center;
-    margin: 0 auto;
-    max-width: 960px;
-}
+<style scoped>
+.site-header { background: white; border-bottom: 1px solid #e4e7ed; }
+.header-inner { max-width: 1000px; margin: 0 auto; padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.brand { font-size: 22px; font-weight: 700; color: #303133; }
+nav { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+.user-name { color: #606266; font-size: 14px; }
+@media (max-width: 600px) { .header-inner { padding: 16px 12px; } nav { gap: 12px; } }
 </style>

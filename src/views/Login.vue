@@ -1,109 +1,74 @@
 <template>
-  <div>
-    <el-container>
-      <el-header>
-        <img src="https://www.markerhub.com/dist/images/logo/markerhub-logo.png"
-             style="height: 60%; margin-top: 10px;"></el-header>
-      <el-main>
-        <el-form :model="ruleForm" :rules="rules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
-          <el-form-item label="账号" prop="username">
-            <el-input v-model="ruleForm.username"></el-input>
-          </el-form-item>
-          <el-form-item label="密码" prop="password">
-            <el-input v-model="ruleForm.password"></el-input>
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" @click="submitForm('ruleForm')">登录</el-button>
-            <el-button @click="resetForm('ruleForm')">重置</el-button>
-          </el-form-item>
-        </el-form>
-      </el-main>
-    </el-container>
-  </div>
+  <BlogHeader />
+  <main class="page">
+    <section class="surface login-panel">
+      <h1 class="page-title">登录</h1>
+      <el-form ref="loginForm" :model="form" :rules="rules" label-position="top" @submit.prevent="submitForm">
+        <el-form-item label="账号" prop="username">
+          <el-input v-model="form.username" autocomplete="username" placeholder="请输入账号" />
+        </el-form-item>
+        <el-form-item label="密码" prop="password">
+          <el-input v-model="form.password" type="password" show-password autocomplete="current-password" placeholder="请输入密码" />
+        </el-form-item>
+        <el-alert v-if="error" :title="error" type="error" :closable="false" show-icon class="login-error" />
+        <el-button type="primary" native-type="submit" :loading="submitting">登录</el-button>
+        <el-button :disabled="submitting" @click="resetForm">重置</el-button>
+      </el-form>
+    </section>
+  </main>
 </template>
 
 <script>
+import BlogHeader from '../components/Header.vue'
+
 export default {
-  name: "Login",
+  name: 'LoginView',
+  components: { BlogHeader },
   data() {
-      return {
-        ruleForm: {
-          username: 'markerhub',
-          password: '111111'
-        },
-        rules: {
-          username: [
-            { required: true, message: '请输入账号', trigger: 'blur' },
-            { min: 3, max: 15, message: '长度在 3 到 5 个字符', trigger: 'blur' }
-          ],
-          password: [
-            { required: true, message: '请输入密码', trigger: 'change' },
-            { min: 6, max: 16, message: '长度在 6 到 16 个字符', trigger: 'blur' }
-          ]
-        }
-      };
-    },
-    methods: {
-      submitForm(formName) {
-        const _this = this
-        this.$refs[formName].validate((valid) => {
-          if (valid) {
-            this.$axios.post("http://localhost:8080/login",this.ruleForm).then((res)=>{
-              const token = res.headers['authorization']
-              const userInfo = res.data.data
-              _this.$store.commit('SET_TOKEN',token)
-              _this.$store.commit('SET_USERINFO',userInfo)
-              _this.$router.push("/blogs")
-            })
-          } else {
-            console.log('error submit!!');
-            return false;
-          }
-        });
-      },
-      resetForm(formName) {
-        this.$refs[formName].resetFields();
+    return {
+      form: { username: '', password: '' },
+      submitting: false,
+      error: '',
+      rules: {
+        username: [{ required: true, message: '请输入账号', trigger: 'blur' }],
+        password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
       }
     }
-};
+  },
+  methods: {
+    async submitForm() {
+      if (this.submitting) return
+      const valid = await this.$refs.loginForm.validate().catch(() => false)
+      if (!valid || this.submitting) return
+      this.submitting = true
+      this.error = ''
+      try {
+        const response = await this.$axios.post('/login', this.form)
+        const token = response.headers.authorization
+        const user = response.data.data
+        if (!token || !user || typeof user !== 'object' || Array.isArray(user)) {
+          throw new Error('登录响应缺少用户信息或令牌')
+        }
+        this.$store.commit('SET_TOKEN', token)
+        this.$store.commit('SET_USERINFO', user)
+        const redirect = this.$route.query.redirect
+        const target = typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : '/blogs'
+        await this.$router.push(target)
+      } catch (error) {
+        this.error = error.message || '登录失败，请重试'
+      } finally {
+        this.submitting = false
+      }
+    },
+    resetForm() {
+      this.$refs.loginForm.resetFields()
+      this.error = ''
+    }
+  }
+}
 </script>
 
 <style scoped>
-  .el-header, .el-footer {
-    background-color: #B3C0D1;
-    color: #333;
-    text-align: center;
-    line-height: 60px;
-  }
-  
-  .el-aside {
-    /* background-color: #D3DCE6; */
-    color: #333;
-    text-align: center;
-    line-height: 200px;
-  }
-  
-  .el-main {
-    /* background-color: #E9EEF3; */
-    color: #333;
-    text-align: center;
-    line-height: 160px;
-  }
-  
-  body > .el-container {
-    margin-bottom: 40px;
-  }
-  
-  .el-container:nth-child(5) .el-aside,
-  .el-container:nth-child(6) .el-aside {
-    line-height: 260px;
-  }
-  
-  .el-container:nth-child(7) .el-aside {
-    line-height: 320px;
-  }
-  .demo-ruleForm {
-    max-width: 500px;
-    margin: 0 auto;
-  }
+.login-panel { max-width: 440px; margin: 24px auto; }
+.login-error { margin-bottom: 20px; }
 </style>
