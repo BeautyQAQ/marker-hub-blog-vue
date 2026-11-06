@@ -18,7 +18,7 @@
         <el-form-item label="内容" prop="content">
           <MdEditor v-model="editForm.content" :toolbars="toolbars" :sanitize="sanitizeMarkdown" v-bind="editorOptions" :read-only="submitting || loading" @on-save="submitForm()" />
         </el-form-item>
-        <el-alert v-if="saveError" :title="saveError" type="error" :closable="false" show-icon class="save-error" />
+        <el-alert v-if="validationError || saveError" :title="validationError || saveError" type="error" :closable="false" show-icon class="save-error" />
         <div class="editor-actions">
         <el-button :disabled="loading || submitting" :loading="submitting && submittingStatus === 0" @click="submitForm(0)">{{ initialForm.status === 1 ? '转为草稿' : '保存草稿' }}</el-button>
         <el-button type="primary" :disabled="loading || submitting" :loading="submitting && submittingStatus === 1" @click="submitForm(1)">{{ initialForm.status === 1 ? '保存并发布' : '发布文章' }}</el-button>
@@ -51,6 +51,7 @@ export default {
       submittingStatus: null,
       loadError: '',
       saveError: '',
+      validationRequested: false,
       requestSequence: 0,
       editorOptions,
       toolbars: ['bold', 'italic', 'strikeThrough', '-', 'title', 'quote', 'unorderedList', 'orderedList', 'task', '-', 'codeRow', 'code', 'link', 'table', '-', 'revoke', 'next', 'save', '=', 'preview', 'fullscreen'],
@@ -63,7 +64,8 @@ export default {
   },
   computed: {
     isEdit() { return Boolean(this.$route.params.blogId) },
-    hasChanges() { return JSON.stringify(this.editForm) !== JSON.stringify(this.initialForm) }
+    hasChanges() { return JSON.stringify(this.editForm) !== JSON.stringify(this.initialForm) },
+    validationError() { return this.validationRequested ? articleValidationMessage(this.editForm) : '' }
   },
   watch: { '$route.params.blogId': { immediate: true, handler: 'loadBlog' } },
   mounted() { window.addEventListener('beforeunload', this.warnBeforeUnload) },
@@ -94,6 +96,7 @@ export default {
       const sequence = ++this.requestSequence
       this.loadError = ''
       this.saveError = ''
+      this.validationRequested = false
       this.editForm = emptyForm()
       this.initialForm = emptyForm()
       if (!this.isEdit) {
@@ -118,8 +121,9 @@ export default {
     },
     async submitForm(status = this.editForm.status) {
       if (this.submitting || this.loading || this.loadError) return
-      this.saveError = articleValidationMessage(this.editForm)
-      if (this.saveError) return
+      this.saveError = ''
+      this.validationRequested = true
+      if (this.validationError) return
       const valid = await this.$refs.editForm.validate().catch(() => false)
       if (!valid || this.submitting) return
       this.submitting = true
@@ -141,6 +145,7 @@ export default {
     resetForm() {
       this.editForm = { ...this.initialForm }
       this.saveError = ''
+      this.validationRequested = false
       this.$nextTick(() => this.$refs.editForm?.clearValidate())
     }
   }

@@ -102,14 +102,22 @@ describe('article editing failure recovery', () => {
     wrapper.unmount()
   })
 
-  it('validates the real form limits and allows an empty summary', async () => {
+  it('updates submitted validation feedback as fields are corrected and allows an empty summary', async () => {
     const api = { post: vi.fn().mockResolvedValue({}) }
     const wrapper = mountEditor({ api, realValidation: true })
+    expect(wrapper.find('.save-error').exists()).toBe(false)
+    await wrapper.vm.submitForm(0)
+    expect(wrapper.text()).toContain('请输入标题')
+    await wrapper.setData({ editForm: { ...wrapper.vm.editForm, title: '标题' } })
+    expect(wrapper.text()).not.toContain('请输入标题')
+    expect(wrapper.text()).toContain('请输入文章内容')
     await wrapper.setData({ editForm: { id: '', title: 'a'.repeat(256), description: '', content: '正文', status: 0 } })
     await wrapper.vm.submitForm(0)
     expect(api.post).not.toHaveBeenCalled()
     expect(wrapper.text()).toContain('标题不能超过 255 个字符')
     await wrapper.setData({ editForm: { ...wrapper.vm.editForm, title: 'a'.repeat(255) } })
+    expect(wrapper.find('.save-error').exists()).toBe(false)
+    expect(api.post).not.toHaveBeenCalled()
     await wrapper.vm.submitForm(0)
     expect(api.post).toHaveBeenCalledOnce()
     wrapper.unmount()
