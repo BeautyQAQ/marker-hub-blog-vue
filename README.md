@@ -38,6 +38,8 @@ CI 在 main 分支 push 和 PR 时使用 Node 24 执行 npm ci、行为测试和
 并为 history 路由配置回退到 index.html；Vite 的开发代理不参与生产部署。
 preview 仅检查构建产物，不提供 /api 代理。
 
+仓库根目录提供多阶段 Dockerfile，镜像构建时执行测试与生产构建，运行时由非 root Nginx 提供静态资源，并将 /api/ 转发到 Compose 中的 api:8080。Nginx 配置位于 `deploy/nginx.conf`，包含 history 回退、静态资源缓存、动态上游解析和 `/healthz` 存活检查。配套 Compose、NAS 启动、HTTPS 接入和独立测试清理说明见并列后端仓库的 `deploy/README.md`。
+
 ## 个人博客功能与接口
 
 访客可分页浏览已发布文章和详情；登录后可新建、保存草稿、发布、修改和删除自己的文章。
